@@ -58,21 +58,34 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_LastAction = -1;
 	
 	/*zCatch */
-	if(GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 1)
+	if(GameServer()->m_pController->IsZCatch())
 	{
-		m_ActiveWeapon = WEAPON_RIFLE;
-		m_LastWeapon = WEAPON_RIFLE;
+		switch(g_Config.m_SvMode)
+		{
+			case 1:
+				m_ActiveWeapon = WEAPON_RIFLE;
+				m_LastWeapon = WEAPON_RIFLE;
+				break;
+			case 3:
+				m_ActiveWeapon = WEAPON_HAMMER;
+				m_LastWeapon = WEAPON_HAMMER;
+				break;
+			case 4:
+				m_ActiveWeapon = WEAPON_GRENADE;
+				m_LastWeapon = WEAPON_GRENADE;
+				break;
+			/*case 5:
+				m_ActiveWeapon = WEAPON_NINJA;
+				m_LastWeapon = WEAPON_NINJA;*/
+			default:
+				m_ActiveWeapon = WEAPON_GUN;
+				m_LastWeapon = WEAPON_HAMMER;
+		}
 	}
-	else if(GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 3)
-	{
-		m_ActiveWeapon = WEAPON_HAMMER;
-		m_LastWeapon = WEAPON_HAMMER;
-	}
-	else
-	{
-		m_ActiveWeapon = WEAPON_GUN;
-		m_LastWeapon = WEAPON_HAMMER;
-	}
+	
+	if(g_Config.m_SvSpawnProtection)
+		pPlayer->m_SpawnkillProtected = true;
+	pPlayer->m_SpawnTick = Server()->Tick();
     /* end zCatch */
 	
 	m_QueuedWeapon = -1;
@@ -132,15 +145,22 @@ void CCharacter::HandleNinja()
 	if(m_ActiveWeapon != WEAPON_NINJA)
 		return;
 
-	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000))
+	/* zCatch */
+	if(GameServer()->m_pController->IsZCatch() == false || (GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 0))
 	{
-		// time's up, return
-		m_aWeapons[WEAPON_NINJA].m_Got = false;
-		m_ActiveWeapon = m_LastWeapon;
-
-		SetWeapon(m_ActiveWeapon);
-		return;
+		if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000))
+		{
+			// time's up, return
+			m_aWeapons[WEAPON_NINJA].m_Got = false;
+			m_ActiveWeapon = m_LastWeapon;
+			if(m_ActiveWeapon == WEAPON_NINJA)
+				m_ActiveWeapon = WEAPON_GUN;
+			
+			SetWeapon(m_ActiveWeapon);
+			return;
+		}
 	}
+	/* zCatch end*/
 
 	// force ninja Weapon
 	SetWeapon(WEAPON_NINJA);
@@ -461,7 +481,7 @@ void CCharacter::HandleWeapons()
 
 	// ammo regen
 	int AmmoRegenTime = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Ammoregentime;
-	if(AmmoRegenTime && (m_ActiveWeapon == WEAPON_GUN || (GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 2))) //zCatch
+	if(AmmoRegenTime && (m_ActiveWeapon == WEAPON_GUN ))
 	{
 		// If equipped and not active, regen ammo?
 		if (m_ReloadTimer <= 0)
@@ -724,10 +744,22 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 
 	if(GameServer()->m_pController->IsFriendlyFire(m_pPlayer->GetCID(), From) && !g_Config.m_SvTeamdamage)
 		return false;
-
-	// m_pPlayer only inflicts half damage on self
+	
+	/* zCatch */
+	bool IsZCatch = GameServer()->m_pController->IsZCatch();
+	//Spawnkill protected players cant get damaged and make damage
+	if(IsZCatch && (m_pPlayer->m_SpawnkillProtected || (GameServer()->m_apPlayers[From] && GameServer()->m_apPlayers[From]->m_SpawnkillProtected)))
+		return false;
+	
 	if(From == m_pPlayer->GetCID())
-		Dmg = max(1, Dmg/2);
+	{
+		if(IsZCatch && g_Config.m_SvMode != 0)
+			Dmg = 0;
+		// m_pPlayer only inflicts half damage on self
+		else
+			Dmg = max(1, Dmg/2);
+	}
+	/* end zCatch */
 
 	m_DamageTaken++;
 
@@ -743,7 +775,7 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		GameServer()->CreateDamageInd(m_Pos, 0, Dmg);
 	}
 	/* zCatch*/ 
-	if(GameServer()->m_pController->IsZCatch() && (g_Config.m_SvMode == 1 || g_Config.m_SvMode == 3))
+	if(IsZCatch && (g_Config.m_SvMode != 0 && g_Config.m_SvMode != 2)) // all except vanilla-mode and all weapons
 	{
 		m_Health = 0;
 		m_Armor = 0;

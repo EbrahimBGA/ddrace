@@ -31,6 +31,9 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_LastKillTry = Server()->Tick();
 	m_TicksSpec = 0;
 	m_TicksIngame = 0;
+	m_SpawnkillProtected = false;
+	m_SpawnTick = Server()->Tick();
+	m_CatchedPlayers = 0;
 }
 
 CPlayer::~CPlayer()
@@ -50,45 +53,16 @@ void CPlayer::Tick()
 	Server()->SetClientScore(m_ClientID, m_Score);
 	
 	/* begin zCatch*/
-	int num = 0, num_spec = 0, num_SpecExplicit = 0;
-	
 	if(m_Team == TEAM_SPECTATORS)
 		m_TicksSpec++;
 	else
-		m_TicksIngame++;	
-	
-	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if(GameServer()->m_apPlayers[i])
-		{
-			num++;
-			if(GameServer()->m_apPlayers[i]->m_Team == TEAM_SPECTATORS)
-				num_spec++;
-			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 1)
-			num_SpecExplicit++;
-		}
-	}
-	
-	if(num == 1)
-	{
-	//Do nothing
-	}
-	//solution for sv_allow_join == 0 and mapchange:
-	else if((g_Config.m_SvAllowJoin == 0) && (num_spec == num) && (num_spec != num_SpecExplicit))
-	{
-		GameServer()->m_pController->EndRound();
-	}
-	else if((num - num_spec == 1) && (num != num_spec) && (num - num_SpecExplicit != 1)) 
-	{
-		for(int i = 0; i < MAX_CLIENTS; i++)
-		{
-			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_Team != TEAM_SPECTATORS)
-				GameServer()->m_apPlayers[i]->m_Score += g_Config.m_SvBonus;
-			GameServer()->m_pController->EndRound();
-			break;
-		}
-	}
+		m_TicksIngame++;
 		
+	if(g_Config.m_SvSpawnProtection && m_SpawnTick + Server()->TickSpeed()*g_Config.m_SvSpawnProtection < Server()->Tick())
+	{
+		m_SpawnkillProtected = false;
+		GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[m_ClientID]);
+	}
 	/* end zCatch*/
 
 	// do latency stuff
@@ -182,17 +156,23 @@ void CPlayer::Snap(int SnappingClient)
 		pPlayerInfo->m_Local = 1;
 		
 	/* begin zCatch*/
-	if(GameServer()->m_apPlayers[m_ClientID] && GameServer()->m_pController->IsZCatch() && g_Config.m_SvColorIndicator)
+	if(GameServer()->m_pController->IsZCatch()) //Check ob player existiert überflüssig?
 	{
-		int num = 161;
-		for(int i = 0; i < MAX_CLIENTS; i++)
-			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_CatchedBy == m_ClientID)
-				num -= 10;
-		pClientInfo->m_ColorBody = num * 0x010000 + 0xff00;
-		pClientInfo->m_ColorFeet = num * 0x010000 + 0xff00;
-		pClientInfo->m_UseCustomColor = 1;
-	}
-		
+		if(m_SpawnkillProtected)
+		{
+			pClientInfo->m_ColorBody = 0xff00;
+			pClientInfo->m_ColorFeet = 0xff00;
+			pClientInfo->m_UseCustomColor = 1;
+			
+		}
+		else if(g_Config.m_SvColorIndicator)
+		{
+			int num = 161 - m_CatchedPlayers * 10;
+			pClientInfo->m_ColorBody = num * 0x010000 + 0xff00;
+			pClientInfo->m_ColorFeet = num * 0x010000 + 0xff00;
+			pClientInfo->m_UseCustomColor = 1;
+		}
+	}	
 	/* end zCatch*/
 
 	if(m_ClientID == SnappingClient && m_Team == TEAM_SPECTATORS)

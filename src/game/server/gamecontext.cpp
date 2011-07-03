@@ -696,9 +696,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 		/* begin zCatch*/
 		if(!str_comp("/info", pMsg->m_pMessage) || !str_comp("/about", pMsg->m_pMessage))
-		{
+		{	
+			char aBuf[256];
+			str_format(aBuf, sizeof(aBuf), "zCatch v. %s by erd and Teetime. Type /cmdlist for all commands.", ZCATCH_VERSION);
 			SendChatTarget(ClientID, " ");
-			SendChatTarget(ClientID, "zCatch v.0.4.1 by erd and Teetime. Type /cmdlist for all commands.");
+			SendChatTarget(ClientID, aBuf);
 		}
 		else if(!str_comp("/cmdlist", pMsg->m_pMessage))
 		{
@@ -772,6 +774,18 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		if(str_comp_nocase(pMsg->m_Type, "option") == 0)
 		{
 			CVoteOptionServer *pOption = m_pVoteOptionFirst;
+		
+			/* zCatch */
+			if(m_pController->IsZCatch() && g_Config.m_SvRestrictMapchange && m_pController->GetRoundStartTick() + Server()->TickSpeed()*g_Config.m_SvMaxMapchangeTime*60 <= Server()->Tick() && !m_World.m_Paused) 
+				if(!str_comp_num(pOption->m_aCommand, "sv_map", 6) || !str_comp_num(pOption->m_aCommand, "change_map", 10))
+				{
+					str_format(aChatmsg, sizeof(aChatmsg), "You can only vote for a mapchange the first %d minutes", g_Config.m_SvMaxMapchangeTime);
+					SendBroadcast(aChatmsg, ClientID);
+					return;
+				}
+				//implement the same for sv_mode?
+			/* end zCatch*/
+			
 			while(pOption)
 			{
 				if(str_comp_nocase(pMsg->m_Value, pOption->m_aDescription) == 0)
@@ -1115,7 +1129,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		{	
 			if((pPlayer->GetTeam() == TEAM_SPECTATORS) || (pPlayer->m_LastKillTry && pPlayer->m_LastKillTry+Server()->TickSpeed()*2 > Server()->Tick()))
 				return;			
-			SendChatTarget(ClientID, "Only one kill in 15sec is allowed.");
+			SendBroadcast("Only one kill in 15sec is allowed", ClientID);
 			pPlayer->m_LastKillTry = Server()->Tick();
 		}
 		else

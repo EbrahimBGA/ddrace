@@ -1503,6 +1503,10 @@ void CServer::SnapFreeID(int ID)
 	m_IDPool.FreeID(ID);
 }
 
+void CServer::ReloadMap()
+{ 
+	m_MapReload = 1; 
+}
 
 void *CServer::SnapNewItem(int Type, int ID, int Size)
 {

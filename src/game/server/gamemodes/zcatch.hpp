@@ -21,6 +21,11 @@ class CGameController_zCatch : public IGameController
 	virtual void StartRound();
 	virtual void OnCharacterSpawn(class CCharacter *pChr);
 	virtual void EndRound();
+	
+	void CheckForGameOver();
+	
+	protected:
+	int m_Mode;
 };
 
 #endif

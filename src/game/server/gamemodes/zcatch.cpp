@@ -11,13 +11,23 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer)
 : IGameController(pGameServer)
 {
 	m_pGameType = "zCatch";
+	m_Mode = g_Config.m_SvMode;
 }
 
 void CGameController_zCatch::Tick()
 {
 	DoWincheck();
 	IGameController::Tick();
+	CheckForGameOver();
+	
+	if(m_Mode != g_Config.m_SvMode) // automatic reload if sv_mode was changed
+	{
+		//Reload map
+		Server()->ReloadMap();
+		m_Mode = g_Config.m_SvMode;
+	}
 }
+
 bool CGameController_zCatch::IsZCatch()
 {
 	return true;
@@ -25,25 +35,29 @@ bool CGameController_zCatch::IsZCatch()
 
 int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID)
 {
-	int client_id =  pVictim->GetPlayer()->GetCID();
+	CPlayer *pPVictim = pVictim->GetPlayer();
 	char buf[256];
-	if(pKiller !=  pVictim->GetPlayer())
+	if(pKiller !=  pPVictim)
 	{
-		pKiller->m_Kills++;
-		pVictim->GetPlayer()->m_Deaths++; 
+		pPVictim->m_Deaths++;
+		pPVictim->m_Score--;
+		pPVictim->m_CatchedPlayers = 0;
 		
+		pKiller->m_Kills++;
 		pKiller->m_Score++;
+		pKiller->m_CatchedPlayers++;
+		
 		/* Check if the killer is already killed and in spectator (victim may died through wallshot) */
 		if(pKiller->GetTeam() != TEAM_SPECTATORS)
 		{
-			pVictim->GetPlayer()->m_CatchedBy = pKiller->GetCID();
-			pVictim->GetPlayer()->SetTeamDirect(TEAM_SPECTATORS);
+			pPVictim->m_CatchedBy = pKiller->GetCID();
+			pPVictim->SetTeamDirect(TEAM_SPECTATORS);
 		
-			if(pVictim->GetPlayer()->m_PlayerWantToFollowCatcher)
-				pVictim->GetPlayer()->m_SpectatorID = pKiller->GetCID(); // Let the victim follow his catcher
+			if(pPVictim->m_PlayerWantToFollowCatcher)
+				pPVictim->m_SpectatorID = pKiller->GetCID(); // Let the victim follow his catcher
 		
 			str_format(buf, sizeof(buf), "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(pKiller->GetCID()), Server()->ClientName(pKiller->GetCID()));	
-			GameServer()->SendChatTarget(client_id, buf);
+			GameServer()->SendChatTarget(pPVictim->GetCID(), buf);
 		}
 	}
 	
@@ -51,17 +65,17 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	{
 		if(GameServer()->m_apPlayers[i])
 		{
-			if(GameServer()->m_apPlayers[i]->m_CatchedBy == client_id)
+			if(GameServer()->m_apPlayers[i]->m_CatchedBy == pPVictim->GetCID())
 			{
 				GameServer()->m_apPlayers[i]->m_CatchedBy = ZCATCH_NOT_CATCHED;
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
 				
 				GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
-				if(pKiller != pVictim->GetPlayer())
-					pKiller->m_Score++;
 			}
 		}
 	}
+	if(pKiller != pPVictim)
+		pKiller->m_Score += pPVictim->m_CatchedPlayers;
 	return 0;
 }
 
@@ -89,6 +103,7 @@ void CGameController_zCatch::StartRound()
 			GameServer()->m_apPlayers[i]->m_Deaths = 0;
 			GameServer()->m_apPlayers[i]->m_TicksSpec = 0;
 			GameServer()->m_apPlayers[i]->m_TicksIngame = 0;
+			GameServer()->m_apPlayers[i]->m_CatchedPlayers = 0;
 			GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 		}
 	}
@@ -103,6 +118,7 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 	pChr->IncreaseHealth(10);
 	if(g_Config.m_SvMode == 2)
 		pChr->IncreaseArmor(10);
+		
 	// give default weapons
 	switch(g_Config.m_SvMode)
 		{
@@ -116,22 +132,65 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 			case 2:
 				pChr->GiveWeapon(WEAPON_HAMMER, -1);
 				pChr->GiveWeapon(WEAPON_GUN, 10);
-				pChr->GiveWeapon(WEAPON_GRENADE, 10);
-				pChr->GiveWeapon(WEAPON_SHOTGUN, 10);
+				pChr->GiveWeapon(WEAPON_GRENADE, -1);
+				pChr->GiveWeapon(WEAPON_SHOTGUN, -1);
 				pChr->GiveWeapon(WEAPON_RIFLE, -1);
 				break;
 			case 3:
 				pChr->GiveWeapon(WEAPON_HAMMER, -1);
 				break;
-			}
+			case 4:
+				pChr->GiveWeapon(WEAPON_GRENADE, -1);
+				break;
+			case 5:
+				pChr->GiveNinja();
+				break;
+		}
 }
+
+void CGameController_zCatch::CheckForGameOver()
+{
+	int num = 0, num_spec = 0, num_SpecExplicit = 0;
+	
+	for(int i = 0; i < MAX_CLIENTS; i++)
+	{
+		if(GameServer()->m_apPlayers[i])
+		{
+			num++;
+			if(GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS)
+				num_spec++;
+			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 1)
+			num_SpecExplicit++;
+		}
+	}
+	
+	if(num == 1)
+	{
+		//Do nothing
+	}
+	//solution for sv_allow_join == 0 and mapchange:
+	else if((g_Config.m_SvAllowJoin == 0) && (num_spec == num) && (num_spec != num_SpecExplicit))
+	{
+		GameServer()->m_pController->EndRound();
+	}
+	else if((num - num_spec == 1) && (num != num_spec) && (num - num_SpecExplicit != 1)) 
+	{
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
+				GameServer()->m_apPlayers[i]->m_Score += g_Config.m_SvBonus;
+			GameServer()->m_pController->EndRound();
+			break;
+		}
+	}
+}
+
 void CGameController_zCatch::EndRound()
 {
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if(GameServer()->m_apPlayers[i])
 		{
-		
 			if(GameServer()->m_apPlayers[i]->m_CatchedBy == ZCATCH_JOINED_NEW) //Neue Spieler joinen lassen
 				GameServer()->m_apPlayers[i]->m_SpecExplicit = 0;
 			
@@ -157,10 +216,10 @@ void CGameController_zCatch::EndRound()
 			}
 		}
 	}
-
+	
 	if(m_Warmup) // game can't end when we are running warmup
 		return;
-
+		
 	GameServer()->m_World.m_Paused = true;
 	m_GameOverTick = Server()->Tick();
 	m_SuddenDeath = 0;

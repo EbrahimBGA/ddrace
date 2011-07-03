@@ -42,6 +42,7 @@ public:
 			return -1;
 		return SendMsg(&Packer, Flags, ClientID);
 	}
+	virtual void ReloadMap() = 0;
 
 	virtual void SetClientName(int ClientID, char const *pName) = 0;
 	virtual void SetClientClan(int ClientID, char const *pClan) = 0;

@@ -142,7 +142,9 @@ public:
 
 	virtual void PostReset();
 	
+	//zCatch
 	virtual bool IsZCatch();
+	int GetRoundStartTick() { return m_RoundStartTick; }
 };
 
 #endif

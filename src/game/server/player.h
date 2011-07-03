@@ -97,16 +97,18 @@ public:
 		int m_Max;
 	} m_Latency;
 	
-		//zCatch:
+	//zCatch:
 	int m_CatchedBy;
 	int m_SpecExplicit;
 	int m_Deaths;
 	int m_Kills;
 	int m_LastKillTry;
 	bool m_PlayerWantToFollowCatcher;
-	
+	bool m_SpawnkillProtected;
 	int m_TicksSpec;
 	int m_TicksIngame;
+	int m_SpawnTick;
+	int m_CatchedPlayers;
 	
 private:
 	CCharacter *m_pCharacter;

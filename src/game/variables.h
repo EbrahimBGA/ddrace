@@ -90,9 +90,13 @@ MACRO_CONFIG_INT(DbgTuning, dbg_tuning, 0, 0, 1, CFGFLAG_CLIENT, "")
 #endif
 
 //zCatch:
-MACRO_CONFIG_INT(SvMode, sv_mode, 1, 0, 3, CFGFLAG_SERVER, "0 - Normal; 1 - Instagib; 2 - Rocket area; 3 - Hammerparty")
+MACRO_CONFIG_INT(SvMode, sv_mode, 1, 0, 5, CFGFLAG_SERVER, "0 - Normal; 1 - Instagib; 2 - Rocket area; 3 - Hammerparty; 5 - Grenade; 5 - Ninja")
 MACRO_CONFIG_INT(SvAllowJoin, sv_allow_join, 2, 0, 2, CFGFLAG_SERVER, "Allow new Players to join without waiting for the next round")
 //0 - Wait for next round; 1 = Allowed to join; 2 = Will join when person with the most kills die
 MACRO_CONFIG_INT(SvColorIndicator, sv_color_indicator, 1, 0, 1, CFGFLAG_SERVER, "Color tees apropriate to the number of currently catched players")
 MACRO_CONFIG_INT(SvBonus, sv_bonus, 0, 0, 10000, CFGFLAG_SERVER, "Give the last player extra points")
 MACRO_CONFIG_INT(SvFollowCatcher, sv_follow_catcher, 1, 0, 1, CFGFLAG_SERVER, "If a victim should follow his catcher")
+
+MACRO_CONFIG_INT(SvRestrictMapchange, sv_restrict_mapchange, 1, 0, 1, CFGFLAG_SERVER, "If votes for map-change are forbidden after some time")
+MACRO_CONFIG_INT(SvMaxMapchangeTime, sv_max_mapchange_time, 10, 5, 1000, CFGFLAG_SERVER, "If sv_restrict_mapchange set: The max time in minutes a mapchange is possible")
+MACRO_CONFIG_INT(SvSpawnProtection, sv_spawnprotection, 2, 0, 5, CFGFLAG_SERVER, "Spawn protection in seconds")
