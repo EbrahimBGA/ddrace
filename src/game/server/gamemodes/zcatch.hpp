@@ -13,6 +13,7 @@ class CGameController_zCatch : public IGameController
 	CGameController_zCatch(class CGameContext *pGameServer);
 	virtual void Tick();
 	virtual bool IsZCatch();
+	virtual void OnPlayerInfoChange(class CPlayer *pP);
 	
 	enum
 	{

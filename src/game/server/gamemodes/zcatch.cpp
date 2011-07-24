@@ -35,6 +35,26 @@ bool CGameController_zCatch::IsZCatch()
 	return true;
 }
 
+void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
+{
+	if(pP->GetTeam() == TEAM_SPECTATORS)
+		return;
+		
+	if(pP->m_SpawnkillProtected)
+	{
+		pP->m_TeeInfos.m_UseCustomColor = 1;
+		pP->m_TeeInfos.m_ColorBody = 0xff00;
+		pP->m_TeeInfos.m_ColorFeet = 0xff00;
+	}
+	else if(g_Config.m_SvColorIndicator)
+	{
+		int num = 161 - pP->m_CatchedPlayers * 10;
+		pP->m_TeeInfos.m_UseCustomColor = 1;
+		pP->m_TeeInfos.m_ColorBody = num * 0x010000 + 0xff00;
+		pP->m_TeeInfos.m_ColorFeet = num * 0x010000 + 0xff00;
+	}
+}
+
 int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID)
 {
 	CPlayer *pPVictim = pVictim->GetPlayer();
@@ -72,8 +92,6 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			{
 				GameServer()->m_apPlayers[i]->m_CatchedBy = ZCATCH_NOT_CATCHED;
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
-				
-				GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 			}
 		}
 	}
@@ -103,7 +121,7 @@ void CGameController_zCatch::StartRound()
 			GameServer()->m_apPlayers[i]->m_TicksSpec = 0;
 			GameServer()->m_apPlayers[i]->m_TicksIngame = 0;
 			GameServer()->m_apPlayers[i]->m_CatchedPlayers = 0;
-			GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
+			OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 		}
 	}
 	char aBufMsg[256];
@@ -174,7 +192,7 @@ void CGameController_zCatch::CheckForGameOver()
 			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
 				GameServer()->m_apPlayers[i]->m_Score += g_Config.m_SvBonus;
 		}
-		GameServer()->m_pController->EndRound();
+		EndRound();
 	}
 }
 
@@ -189,7 +207,6 @@ void CGameController_zCatch::EndRound()
 			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 0)
 			{
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
-				GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 				
 				char aBuf[128];
 				str_format(aBuf, sizeof(aBuf), "Kills: %d | Deaths: %d", GameServer()->m_apPlayers[i]->m_Kills, GameServer()->m_apPlayers[i]->m_Deaths);				

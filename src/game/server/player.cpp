@@ -58,8 +58,10 @@ void CPlayer::Tick()
 	else
 		m_TicksIngame++;
 		
-	if(g_Config.m_SvSpawnProtection && m_SpawnTick + Server()->TickSpeed()*g_Config.m_SvSpawnProtection < Server()->Tick())
+	if(m_SpawnkillProtected && m_SpawnTick + Server()->TickSpeed()*g_Config.m_SvSpawnProtection < Server()->Tick())
+	{
 		m_SpawnkillProtected = false;
+	}
 	/* end zCatch*/
 
 	// do latency stuff
@@ -135,32 +137,9 @@ void CPlayer::Snap(int SnappingClient)
 	StrToInts(&pClientInfo->m_Clan0, 3, Server()->ClientClan(m_ClientID));
 	pClientInfo->m_Country = Server()->ClientCountry(m_ClientID);
 	StrToInts(&pClientInfo->m_Skin0, 6, m_TeeInfos.m_SkinName);
-	
-	/* begin zCatch*/
-	if(GameServer()->m_pController->IsZCatch()) //Check ob player existiert überflüssig?
-	{
-		if(m_SpawnkillProtected)
-		{
-			pClientInfo->m_UseCustomColor = 1;
-			pClientInfo->m_ColorBody = 0xff00;
-			pClientInfo->m_ColorFeet = 0xff00;
-			
-		}
-		else if(g_Config.m_SvColorIndicator)
-		{
-			int num = 161 - m_CatchedPlayers * 10;
-			pClientInfo->m_UseCustomColor = 1;
-			pClientInfo->m_ColorBody = num * 0x010000 + 0xff00;
-			pClientInfo->m_ColorFeet = num * 0x010000 + 0xff00;
-		}
-	}
-	else
-	{
-		pClientInfo->m_UseCustomColor = m_TeeInfos.m_UseCustomColor;
-		pClientInfo->m_ColorBody = m_TeeInfos.m_ColorBody;
-		pClientInfo->m_ColorFeet = m_TeeInfos.m_ColorFeet;
-	}
-	/* end zCatch*/
+	pClientInfo->m_UseCustomColor = m_TeeInfos.m_UseCustomColor;
+	pClientInfo->m_ColorBody = m_TeeInfos.m_ColorBody;
+	pClientInfo->m_ColorFeet = m_TeeInfos.m_ColorFeet;
 
 	CNetObj_PlayerInfo *pPlayerInfo = static_cast<CNetObj_PlayerInfo *>(Server()->SnapNewItem(NETOBJTYPE_PLAYERINFO, m_ClientID, sizeof(CNetObj_PlayerInfo)));
 	if(!pPlayerInfo)
@@ -312,6 +291,7 @@ void CPlayer::SetTeam(int Team)
 void CPlayer::SetTeamDirect(int Team)
 {
 	m_Team = Team;
+	GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[m_ClientID]);
 }
 
 void CPlayer::TryRespawn()
