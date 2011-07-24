@@ -97,6 +97,6 @@ MACRO_CONFIG_INT(SvColorIndicator, sv_color_indicator, 1, 0, 1, CFGFLAG_SERVER, 
 MACRO_CONFIG_INT(SvBonus, sv_bonus, 0, 0, 10000, CFGFLAG_SERVER, "Give the last player extra points")
 MACRO_CONFIG_INT(SvFollowCatcher, sv_follow_catcher, 1, 0, 1, CFGFLAG_SERVER, "If a victim should follow his catcher")
 
-MACRO_CONFIG_INT(SvRestrictMapchange, sv_restrict_mapchange, 1, 0, 1, CFGFLAG_SERVER, "If votes for map-change are forbidden after some time")
-MACRO_CONFIG_INT(SvMaxMapchangeTime, sv_max_mapchange_time, 10, 5, 1000, CFGFLAG_SERVER, "If sv_restrict_mapchange set: The max time in minutes a mapchange is possible")
+MACRO_CONFIG_INT(SvRestrictVotes, sv_restrict_votes, 1, 0, 1, CFGFLAG_SERVER, "If callvotes who change the game are forbidden after some time (map- and mode-changes)")
+MACRO_CONFIG_INT(SvMaxVotetime, sv_max_votetime, 10, 5, 1000, CFGFLAG_SERVER, "If sv_restrict_votes set: The max time in minutes a mapchange or mode-change is possible")
 MACRO_CONFIG_INT(SvSpawnProtection, sv_spawnprotection, 2, 0, 5, CFGFLAG_SERVER, "Spawn protection in seconds")

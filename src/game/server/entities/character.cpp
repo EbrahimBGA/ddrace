@@ -83,7 +83,7 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 		}
 	}
 	
-	if(g_Config.m_SvSpawnProtection)
+	if(g_Config.m_SvSpawnProtection && !GameServer()->m_World.m_Paused)
 		pPlayer->m_SpawnkillProtected = true;
 	pPlayer->m_SpawnTick = Server()->Tick();
     /* end zCatch */

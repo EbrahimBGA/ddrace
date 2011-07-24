@@ -776,14 +776,21 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			CVoteOptionServer *pOption = m_pVoteOptionFirst;
 		
 			/* zCatch */
-			if(m_pController->IsZCatch() && g_Config.m_SvRestrictMapchange && m_pController->GetRoundStartTick() + Server()->TickSpeed()*g_Config.m_SvMaxMapchangeTime*60 <= Server()->Tick() && !m_World.m_Paused) 
+			if(m_pController->IsZCatch() && g_Config.m_SvRestrictVotes && m_pController->GetRoundStartTick() + Server()->TickSpeed()*g_Config.m_SvMaxVotetime*60 <= Server()->Tick() && !m_World.m_Paused)
+			{
 				if(!str_comp_num(pOption->m_aCommand, "sv_map", 6) || !str_comp_num(pOption->m_aCommand, "change_map", 10))
 				{
-					str_format(aChatmsg, sizeof(aChatmsg), "You can only vote for a mapchange the first %d minutes", g_Config.m_SvMaxMapchangeTime);
+					str_format(aChatmsg, sizeof(aChatmsg), "You can change map only in the first %d minutes", g_Config.m_SvMaxMapchangeTime);
 					SendBroadcast(aChatmsg, ClientID);
 					return;
 				}
-				//implement the same for sv_mode?
+				else if(!str_comp_num(pOption->m_aCommand, "sv_mode", 7)
+				{
+					str_format(aChatmsg, sizeof(aChatmsg), "You can change weapon only in the first %d minutes", g_Config.m_SvMaxMapchangeTime);
+					SendBroadcast(aChatmsg, ClientID);
+					return;
+				}
+			}
 			/* end zCatch*/
 			
 			while(pOption)
@@ -933,7 +940,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		// Switch team on given client and kill/respawn him
 		if(m_pController->CanJoinTeam(pMsg->m_Team, ClientID))
 		{
-			if(m_pController->CanChangeTeam(pPlayer, pMsg->m_Team) && !m_pController->IsZCatch()) //zCatch)
+			if(m_pController->CanChangeTeam(pPlayer, pMsg->m_Team) && !m_pController->IsZCatch()) //zCatch
 			{
 				pPlayer->m_LastSetTeam = Server()->Tick();
 				if(pPlayer->GetTeam() == TEAM_SPECTATORS || pMsg->m_Team == TEAM_SPECTATORS)

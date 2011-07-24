@@ -1,5 +1,7 @@
-/* copyright (c) 2007 magnus auvinen, see licence.txt for more info */
-/* zCatch by erd_baer */
+/* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
+/* If you are missing that file, acquire a complete release at teeworlds.com.                */
+/* Made by erd and Teetime */
+
 #include <engine/server.h>
 #include <engine/shared/config.h>
 #include <game/server/entities/character.h>
@@ -36,15 +38,12 @@ bool CGameController_zCatch::IsZCatch()
 int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID)
 {
 	CPlayer *pPVictim = pVictim->GetPlayer();
-	char buf[256];
-	if(pKiller !=  pPVictim)
-	{
-		pPVictim->m_Deaths++;
-		pPVictim->m_Score--;
-		pPVictim->m_CatchedPlayers = 0;
+	char aBuf[256];
 		
+	if(pKiller != pPVictim)
+	{
 		pKiller->m_Kills++;
-		pKiller->m_Score++;
+		pKiller->m_Score += pPVictim->m_CatchedPlayers + 1;
 		pKiller->m_CatchedPlayers++;
 		
 		/* Check if the killer is already killed and in spectator (victim may died through wallshot) */
@@ -56,11 +55,15 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			if(pPVictim->m_PlayerWantToFollowCatcher)
 				pPVictim->m_SpectatorID = pKiller->GetCID(); // Let the victim follow his catcher
 		
-			str_format(buf, sizeof(buf), "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(pKiller->GetCID()), Server()->ClientName(pKiller->GetCID()));	
-			GameServer()->SendChatTarget(pPVictim->GetCID(), buf);
+			str_format(aBuf, sizeof(aBuf), "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(pKiller->GetCID()), Server()->ClientName(pKiller->GetCID()));	
+			GameServer()->SendChatTarget(pPVictim->GetCID(), aBuf);
 		}
 	}
 	
+	pPVictim->m_Deaths++;
+	pPVictim->m_Score--;
+	pPVictim->m_CatchedPlayers = 0;
+
 	for(int i=0; i < MAX_CLIENTS; i++)
 	{
 		if(GameServer()->m_apPlayers[i])
@@ -74,8 +77,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			}
 		}
 	}
-	if(pKiller != pPVictim)
-		pKiller->m_Score += pPVictim->m_CatchedPlayers;
+	
 	return 0;
 }
 
@@ -118,7 +120,7 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 	pChr->IncreaseHealth(10);
 	if(g_Config.m_SvMode == 2)
 		pChr->IncreaseArmor(10);
-		
+	
 	// give default weapons
 	switch(g_Config.m_SvMode)
 		{
