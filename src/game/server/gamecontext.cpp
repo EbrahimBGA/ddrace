@@ -780,13 +780,13 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			{
 				if(!str_comp_num(pOption->m_aCommand, "sv_map", 6) || !str_comp_num(pOption->m_aCommand, "change_map", 10))
 				{
-					str_format(aChatmsg, sizeof(aChatmsg), "You can change map only in the first %d minutes", g_Config.m_SvMaxMapchangeTime);
+					str_format(aChatmsg, sizeof(aChatmsg), "You can change map only in the first %d minutes", g_Config.m_SvMaxVotetime);
 					SendBroadcast(aChatmsg, ClientID);
 					return;
 				}
-				else if(!str_comp_num(pOption->m_aCommand, "sv_mode", 7)
+				else if(!str_comp_num(pOption->m_aCommand, "sv_mode", 7))
 				{
-					str_format(aChatmsg, sizeof(aChatmsg), "You can change weapon only in the first %d minutes", g_Config.m_SvMaxMapchangeTime);
+					str_format(aChatmsg, sizeof(aChatmsg), "You can change weapon only in the first %d minutes", g_Config.m_SvMaxVotetime);
 					SendBroadcast(aChatmsg, ClientID);
 					return;
 				}
