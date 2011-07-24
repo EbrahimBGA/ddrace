@@ -173,9 +173,8 @@ void CGameController_zCatch::CheckForGameOver()
 		{
 			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
 				GameServer()->m_apPlayers[i]->m_Score += g_Config.m_SvBonus;
-			GameServer()->m_pController->EndRound();
-			break;
 		}
+		GameServer()->m_pController->EndRound();
 	}
 }
 
