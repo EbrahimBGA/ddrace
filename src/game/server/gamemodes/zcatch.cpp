@@ -96,10 +96,7 @@ void CGameController_zCatch::StartRound()
 	for(int i=0; i<MAX_CLIENTS; i++)
 	{
 		if(GameServer()->m_apPlayers[i])
-		{
-			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 0 || GameServer()->m_apPlayers[i]->m_CatchedBy == ZCATCH_JOINED_NEW)
-				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
-				
+		{			
 			GameServer()->m_apPlayers[i]->m_CatchedBy = ZCATCH_NOT_CATCHED;
 			GameServer()->m_apPlayers[i]->m_Kills = 0;
 			GameServer()->m_apPlayers[i]->m_Deaths = 0;
@@ -170,11 +167,6 @@ void CGameController_zCatch::CheckForGameOver()
 	{
 		//Do nothing
 	}
-	//solution for sv_allow_join == 0 and mapchange:
-	else if((g_Config.m_SvAllowJoin == 0) && (num_spec == num) && (num_spec != num_SpecExplicit))
-	{
-		GameServer()->m_pController->EndRound();
-	}
 	else if((num - num_spec == 1) && (num != num_spec) && (num - num_SpecExplicit != 1)) 
 	{
 		for(int i = 0; i < MAX_CLIENTS; i++)
@@ -192,29 +184,24 @@ void CGameController_zCatch::EndRound()
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if(GameServer()->m_apPlayers[i])
-		{
-			if(GameServer()->m_apPlayers[i]->m_CatchedBy == ZCATCH_JOINED_NEW) //Neue Spieler joinen lassen
-				GameServer()->m_apPlayers[i]->m_SpecExplicit = 0;
+		{		
+			GameServer()->m_apPlayers[i]->m_CatchedBy = ZCATCH_NOT_CATCHED; //Set all players in server as non-catched
 			
 			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 0)
 			{
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
 				GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 				
-				if(GameServer()->m_apPlayers[i]->m_CatchedBy != ZCATCH_JOINED_NEW)
+				char aBuf[128];
+				str_format(aBuf, sizeof(aBuf), "Kills: %d | Deaths: %d", GameServer()->m_apPlayers[i]->m_Kills, GameServer()->m_apPlayers[i]->m_Deaths);				
+				GameServer()->SendChatTarget(i, aBuf);
+				
+				if(GameServer()->m_apPlayers[i]->m_TicksSpec != 0 || GameServer()->m_apPlayers[i]->m_TicksIngame != 0)
 				{
-					char abuf[128];
-					str_format(abuf, sizeof(abuf), "Kills: %d | Deaths: %d", GameServer()->m_apPlayers[i]->m_Kills, GameServer()->m_apPlayers[i]->m_Deaths);				
-					GameServer()->SendChatTarget(i, abuf);
-					
-					if(GameServer()->m_apPlayers[i]->m_TicksSpec != 0 || GameServer()->m_apPlayers[i]->m_TicksIngame != 0)
-					{
-						double TimeInSpec = (GameServer()->m_apPlayers[i]->m_TicksSpec*100.0) / (GameServer()->m_apPlayers[i]->m_TicksIngame + GameServer()->m_apPlayers[i]->m_TicksSpec);
-						str_format(abuf, sizeof(abuf), "Spec: %.2f%% | Ingame: %.2f%%", (double)TimeInSpec, (double)(100.0 - TimeInSpec));
-						GameServer()->SendChatTarget(i, abuf);	
-					}
+					double TimeInSpec = (GameServer()->m_apPlayers[i]->m_TicksSpec*100.0) / (GameServer()->m_apPlayers[i]->m_TicksIngame + GameServer()->m_apPlayers[i]->m_TicksSpec);
+					str_format(aBuf, sizeof(aBuf), "Spec: %.2f%% | Ingame: %.2f%%", (double)TimeInSpec, (double)(100.0 - TimeInSpec));
+					GameServer()->SendChatTarget(i, aBuf);	
 				}
-				GameServer()->m_apPlayers[i]->m_CatchedBy = ZCATCH_NOT_CATCHED; //Set all players in server as non-catched
 			}
 		}
 	}
