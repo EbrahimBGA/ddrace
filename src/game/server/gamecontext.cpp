@@ -1467,6 +1467,34 @@ void CGameContext::ConVote(IConsole::IResult *pResult, void *pUserData)
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
 }
 
+#ifdef CONF_DEBUG
+void CGameContext::ConInfo(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	
+	int ClientID = clamp(pResult->GetInteger(0), 0, 16);
+	if(!pSelf->m_apPlayers[ClientID])
+	{
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", "invalid client id");
+		return;
+	}
+	char buf[1024];
+	str_format(buf, sizeof(buf), "%d:\"%s\" Team: %d; Catched by: %d:%s; Spec explicit: %d; Spawnprotected: %d; Catched players: %d; Color: %d",
+		ClientID, 
+		pSelf->Server()->ClientName(ClientID), 
+		pSelf->m_apPlayers[ClientID]->GetTeam(),
+		pSelf->m_apPlayers[ClientID]->m_CatchedBy, 
+		pSelf->Server()->ClientName(pSelf->m_apPlayers[ClientID]->m_CatchedBy), 
+		pSelf->m_apPlayers[ClientID]->m_SpecExplicit,
+		pSelf->m_apPlayers[ClientID]->m_SpawnkillProtected,
+		pSelf->m_apPlayers[ClientID]->m_CatchedPlayers,
+		pSelf->m_apPlayers[ClientID]->m_TeeInfos.m_ColorBody
+		);
+		
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Console", buf);	
+}
+#endif
+
 void CGameContext::ConchainSpecialMotdupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
 	pfnCallback(pResult, pCallbackUserData);
@@ -1502,6 +1530,7 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("force_vote", "ss?r", CFGFLAG_SERVER, ConForceVote, this, "");
 	Console()->Register("clear_votes", "", CFGFLAG_SERVER, ConClearVotes, this, "");
 	Console()->Register("vote", "r", CFGFLAG_SERVER, ConVote, this, "");
+	Console()->Register("info", "i", CFGFLAG_SERVER, ConInfo, this, "");
 
 	Console()->Chain("sv_motd", ConchainSpecialMotdupdate, this);
 }
