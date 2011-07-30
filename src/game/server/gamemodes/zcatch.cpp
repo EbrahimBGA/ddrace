@@ -36,17 +36,16 @@ bool CGameController_zCatch::IsZCatch()
 }
 
 void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
-{
-	if(pP->GetTeam() == TEAM_SPECTATORS)
-		return;
-		
+{		
+	/*
 	if(pP->m_SpawnkillProtected)
 	{
 		pP->m_TeeInfos.m_UseCustomColor = 1;
 		pP->m_TeeInfos.m_ColorBody = 0xff00;
 		pP->m_TeeInfos.m_ColorFeet = 0xff00;
 	}
-	else if(g_Config.m_SvColorIndicator)
+	else */
+	if(g_Config.m_SvColorIndicator)
 	{
 		int num = 161 - pP->m_CatchedPlayers * 10;
 		pP->m_TeeInfos.m_UseCustomColor = 1;
@@ -58,7 +57,6 @@ void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID)
 {
 	CPlayer *pPVictim = pVictim->GetPlayer();
-	char aBuf[256];
 		
 	if(pKiller != pPVictim)
 	{
@@ -74,10 +72,17 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		
 			if(pPVictim->m_PlayerWantToFollowCatcher)
 				pPVictim->m_SpectatorID = pKiller->GetCID(); // Let the victim follow his catcher
-		
+				
+			char aBuf[256];
 			str_format(aBuf, sizeof(aBuf), "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(pKiller->GetCID()), Server()->ClientName(pKiller->GetCID()));	
 			GameServer()->SendChatTarget(pPVictim->GetCID(), aBuf);
 		}
+	}
+	
+	if(WeaponID == WEAPON_SELF)
+	{
+		//punishment when selfkill
+		pPVictim->m_Score -= 14;
 	}
 	
 	pPVictim->m_Deaths++;
@@ -93,6 +98,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 				GameServer()->m_apPlayers[i]->m_CatchedBy = ZCATCH_NOT_CATCHED;
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
 			}
+			OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 		}
 	}
 	
@@ -121,7 +127,6 @@ void CGameController_zCatch::StartRound()
 			GameServer()->m_apPlayers[i]->m_TicksSpec = 0;
 			GameServer()->m_apPlayers[i]->m_TicksIngame = 0;
 			GameServer()->m_apPlayers[i]->m_CatchedPlayers = 0;
-			OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 		}
 	}
 	char aBufMsg[256];
@@ -163,6 +168,7 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 				pChr->GiveNinja();
 				break;
 		}
+	OnPlayerInfoChange(pChr->GetPlayer());
 }
 
 void CGameController_zCatch::CheckForGameOver()
@@ -207,6 +213,7 @@ void CGameController_zCatch::EndRound()
 			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 0)
 			{
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
+				OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 				
 				char aBuf[128];
 				str_format(aBuf, sizeof(aBuf), "Kills: %d | Deaths: %d", GameServer()->m_apPlayers[i]->m_Kills, GameServer()->m_apPlayers[i]->m_Deaths);				

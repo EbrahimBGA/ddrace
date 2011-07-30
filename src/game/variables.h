@@ -87,7 +87,6 @@ MACRO_CONFIG_INT(SvVoteKickBantime, sv_vote_kick_bantime, 5, 0, 1440, CFGFLAG_SE
 
 MACRO_CONFIG_INT(DbgFocus, dbg_focus, 0, 0, 1, CFGFLAG_CLIENT, "")
 MACRO_CONFIG_INT(DbgTuning, dbg_tuning, 0, 0, 1, CFGFLAG_CLIENT, "")
-#endif
 
 //zCatch:
 MACRO_CONFIG_INT(SvMode, sv_mode, 1, 0, 5, CFGFLAG_SERVER, "0 - Normal; 1 - Instagib; 2 - Rocket area; 3 - Hammerparty; 5 - Grenade; 5 - Ninja")
@@ -100,3 +99,5 @@ MACRO_CONFIG_INT(SvFollowCatcher, sv_follow_catcher, 1, 0, 1, CFGFLAG_SERVER, "I
 MACRO_CONFIG_INT(SvRestrictVotes, sv_restrict_votes, 1, 0, 1, CFGFLAG_SERVER, "If callvotes who change the game are forbidden after some time (map- and mode-changes)")
 MACRO_CONFIG_INT(SvMaxVotetime, sv_max_votetime, 10, 5, 1000, CFGFLAG_SERVER, "If sv_restrict_votes is set: The max time in minutes where a mapchange or mode-change is possible")
 MACRO_CONFIG_INT(SvSpawnProtection, sv_spawnprotection, 1, 0, 5, CFGFLAG_SERVER, "Spawn protection in seconds")
+
+#endif

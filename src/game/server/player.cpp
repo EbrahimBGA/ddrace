@@ -61,6 +61,7 @@ void CPlayer::Tick()
 	if(m_SpawnkillProtected && m_SpawnTick + Server()->TickSpeed()*g_Config.m_SvSpawnProtection < Server()->Tick())
 	{
 		m_SpawnkillProtected = false;
+		GameServer()->m_pController->OnPlayerInfoChange(this);
 	}
 	/* end zCatch*/
 
@@ -291,7 +292,6 @@ void CPlayer::SetTeam(int Team)
 void CPlayer::SetTeamDirect(int Team)
 {
 	m_Team = Team;
-	GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[m_ClientID]);
 }
 
 void CPlayer::TryRespawn()

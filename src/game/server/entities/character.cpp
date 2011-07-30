@@ -74,9 +74,6 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 				m_ActiveWeapon = WEAPON_GRENADE;
 				m_LastWeapon = WEAPON_GRENADE;
 				break;
-			/*case 5:
-				m_ActiveWeapon = WEAPON_NINJA;
-				m_LastWeapon = WEAPON_NINJA;*/
 			default:
 				m_ActiveWeapon = WEAPON_GUN;
 				m_LastWeapon = WEAPON_HAMMER;
