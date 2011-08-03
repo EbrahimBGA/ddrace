@@ -701,7 +701,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			SendChatTarget(ClientID, " ");
 			SendChatTarget(ClientID, "/info or /about - see information about author.");
 			SendChatTarget(ClientID, "/help - learn how to play.");
-			SendChatTarget(ClientID, "/credits - see .");
+			SendChatTarget(ClientID, "/credits - see credits.");
 			SendChatTarget(ClientID, "/follow 1 or /follow 0 - Enables/Disables following of the catcher.");
 		}
 		else if(!str_comp("/help", pMsg->m_pMessage))
