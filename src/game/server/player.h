@@ -110,6 +110,12 @@ public:
 	int m_SpawnTick;
 	int m_CatchedPlayers;
 	
+	//Anticamper
+	int HandleCamping();
+	int m_CampTick;
+	vec2 m_CampPos;
+	bool m_SentCampMsg;
+	
 private:
 	CCharacter *m_pCharacter;
 	CGameContext *m_pGameServer;
