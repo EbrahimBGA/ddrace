@@ -701,6 +701,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			SendChatTarget(ClientID, " ");
 			SendChatTarget(ClientID, "/info or /about - see information about author.");
 			SendChatTarget(ClientID, "/help - learn how to play.");
+			SendChatTarget(ClientID, "/credits - see .");
 			SendChatTarget(ClientID, "/follow 1 or /follow 0 - Enables/Disables following of the catcher.");
 		}
 		else if(!str_comp("/help", pMsg->m_pMessage))
@@ -710,6 +711,13 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			SendChatTarget(ClientID, "If you die, all players that you killed will respawn.");
 			SendChatTarget(ClientID, "So the only way to win is to kill every player without beeing killed.");
 			SendChatTarget(ClientID, "Have fun!");
+		}
+		else if(!str_comp("/credits", pMsg->m_pMessage))
+		{
+			SendChatTarget(ClientID, " ");
+			SendChatTarget(ClientID, "This mod is originally created by 'erd' and is now developed by 'Teetime.'");
+			SendChatTarget(ClientID, "Thanks to Taini/Tainmart for his ideas and to every player who plays zCatch :)");
+			SendChatTarget(ClientID, "Anticamper based on TomsMod by Tom.");
 		}
 		else if(!str_comp("/follow 0", pMsg->m_pMessage))
 		{
