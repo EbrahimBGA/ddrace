@@ -5,6 +5,7 @@
 #ifndef GAME_SERVER_GAMEMODES_ZCATCH_H
 #define GAME_SERVER_GAMEMODES_ZCATCH_H
 
+#include <base/vmath.h>
 #include <game/server/gamecontroller.h>
 
 class CGameController_zCatch : public IGameController

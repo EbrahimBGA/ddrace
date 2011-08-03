@@ -2,6 +2,7 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 /* Made by erd and Teetime */
 
+#include <base/math.h>
 #include <engine/server.h>
 #include <engine/shared/config.h>
 #include <game/server/entities/character.h>
@@ -78,8 +79,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			GameServer()->SendChatTarget(pPVictim->GetCID(), aBuf);
 		}
 	}
-	
-	if(WeaponID == WEAPON_SELF)
+	else if(WeaponID == WEAPON_SELF)
 	{
 		//punishment when selfkill
 		pPVictim->m_Score -= 14;
