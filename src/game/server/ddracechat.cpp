@@ -200,6 +200,12 @@ void CGameContext::ConTogglePause(IConsole::IResult *pResult, void *pUserData)
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	if(!CheckClientID(pResult->m_ClientID)) return;
 
+	if(!g_Config.m_SvPauseable)
+	{
+		ConToggleSpec(pResult, pUserData);
+		return;
+	}
+
 	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
 	if(!pPlayer)
 		return;
