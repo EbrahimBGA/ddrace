@@ -91,8 +91,8 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 
 void CCharacter::Destroy()
 {
-	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
 	m_Alive = false;
+	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
 }
 
 void CCharacter::SetWeapon(int W)
@@ -895,6 +895,9 @@ void CCharacter::Snap(int SnappingClient)
 		)
 		return;
 
+	if(m_Paused)
+		return;
+
 	CNetObj_Character *pCharacter = static_cast<CNetObj_Character *>(Server()->SnapNewItem(NETOBJTYPE_CHARACTER, m_pPlayer->GetCID(), sizeof(CNetObj_Character)));
 	if(!pCharacter)
 		return;
@@ -1562,8 +1565,18 @@ void CCharacter::GiveAllWeapons()
 	 return;
 }
 
+void CCharacter::Pause(bool Pause)
+{
+	m_Paused = Pause;
+	if(Pause)
+		GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
+	else
+		GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = &m_Core;
+}
+
 void CCharacter::DDRaceInit()
 {
+	m_Paused = false;
 	m_DDRaceState = DDRACE_NONE;
 	m_PrevPos = m_Pos;
 	m_EyeEmote = true;

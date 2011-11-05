@@ -37,12 +37,15 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_Sent1stAfkWarning = 0;
 	m_Sent2ndAfkWarning = 0;
 	m_ChatScore = 0;
-	m_PauseInfo.m_Respawn = false;
 
 	GameServer()->Score()->PlayerData(ClientID)->Reset();
 
 	m_IsUsingDDRaceClient = false;
 	m_ShowOthers = false;
+
+	m_Paused = 0;
+
+	m_NextPauseTick = 0;
 
 	// Variable initialized:
 	m_Last_Team = 0;
@@ -94,9 +97,6 @@ void CPlayer::Tick()
 		}
 	}
 
-	if(!m_pCharacter && m_Team == TEAM_SPECTATORS && m_SpectatorID == SPEC_FREEVIEW)
-		m_ViewPos -= vec2(clamp(m_ViewPos.x-m_LatestActivity.m_TargetX, -500.0f, 500.0f), clamp(m_ViewPos.y-m_LatestActivity.m_TargetY, -400.0f, 400.0f));
-
 	if(!m_pCharacter && m_DieTick+Server()->TickSpeed()*3 <= Server()->Tick())
 		m_Spawning = true;
 
@@ -104,9 +104,23 @@ void CPlayer::Tick()
 	{
 		if(m_pCharacter->IsAlive())
 		{
+			if(m_Paused >= 3)
+			{
+				ProcessPause();
+			}
+			else if(m_Paused == 2 && m_NextPauseTick < Server()->Tick())
+			{
+				if((!m_pCharacter->GetWeaponGot(WEAPON_NINJA) || m_pCharacter->m_FreezeTime) && m_pCharacter->IsGrounded() && m_pCharacter->m_Pos == m_pCharacter->m_PrevPos)
+					ProcessPause();
+			}
+			else if(m_NextPauseTick < Server()->Tick())
+			{
+				ProcessPause();
+			}
+
 			m_ViewPos = m_pCharacter->m_Pos;
 		}
-		else
+		else if(!m_pCharacter->IsPaused())
 		{
 			delete m_pCharacter;
 			m_pCharacter = 0;
@@ -161,12 +175,12 @@ void CPlayer::Snap(int SnappingClient)
 	pPlayerInfo->m_Local = 0;
 	pPlayerInfo->m_ClientID = m_ClientID;
 	pPlayerInfo->m_Score = abs(m_Score) * -1;
-	pPlayerInfo->m_Team = m_Team;
+	pPlayerInfo->m_Team = (!m_Paused) ? m_Team : TEAM_SPECTATORS;
 
 	if(m_ClientID == SnappingClient)
 		pPlayerInfo->m_Local = 1;
 
-	if(m_ClientID == SnappingClient && m_Team == TEAM_SPECTATORS)
+	if(m_ClientID == SnappingClient && (m_Team == TEAM_SPECTATORS || m_Paused))
 	{
 		CNetObj_SpectatorInfo *pSpectatorInfo = static_cast<CNetObj_SpectatorInfo *>(Server()->SnapNewItem(NETOBJTYPE_SPECTATORINFO, m_ClientID, sizeof(CNetObj_SpectatorInfo)));
 		if(!pSpectatorInfo)
@@ -182,8 +196,6 @@ void CPlayer::Snap(int SnappingClient)
 		pPlayerInfo->m_Score = -9999;
 	else
 		pPlayerInfo->m_Score = abs(m_Score) * -1;
-
-	pPlayerInfo->m_Team = m_Team;
 }
 
 void CPlayer::OnDisconnect(const char *pReason)
@@ -213,7 +225,7 @@ void CPlayer::OnPredictedInput(CNetObj_PlayerInput *NewInput)
 	if((m_PlayerFlags&PLAYERFLAG_CHATTING) && (NewInput->m_PlayerFlags&PLAYERFLAG_CHATTING))
 		return;
 
-	if(m_pCharacter)
+	if(m_pCharacter && !m_Paused)
 		m_pCharacter->OnPredictedInput(NewInput);
 }
 
@@ -238,7 +250,10 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 	m_PlayerFlags = NewInput->m_PlayerFlags;
 
 	if(m_pCharacter)
-		m_pCharacter->OnDirectInput(NewInput);
+		if(!m_Paused)
+			m_pCharacter->OnDirectInput(NewInput);
+		else
+			m_pCharacter->ResetInput();
 
 	if(!m_pCharacter && m_Team != TEAM_SPECTATORS && (NewInput->m_Fire&1))
 		m_Spawning = true;
@@ -321,15 +336,6 @@ void CPlayer::SetTeam(int Team)
 
 void CPlayer::TryRespawn()
 {
-	if(m_PauseInfo.m_Respawn)
-	{
-		m_pCharacter = new(m_ClientID) CCharacter(&GameServer()->m_World);
-		m_pCharacter->Spawn(this, m_PauseInfo.m_Core.m_Pos);
-		GameServer()->CreatePlayerSpawn(m_PauseInfo.m_Core.m_Pos, ((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams.TeamMask((m_PauseInfo.m_Team > 0 && m_PauseInfo.m_Team < TEAM_SUPER) ? m_PauseInfo.m_Team : 0, -1, m_ClientID));
-		LoadCharacter();
-	}
-	else
-	{
 	vec2 SpawnPos;
 
 	if(!GameServer()->m_pController->CanSpawn(m_Team, &SpawnPos))
@@ -339,74 +345,6 @@ void CPlayer::TryRespawn()
 	m_pCharacter = new(m_ClientID) CCharacter(&GameServer()->m_World);
 	m_pCharacter->Spawn(this, SpawnPos);
 	GameServer()->CreatePlayerSpawn(SpawnPos);
-	}
-}
-
-void CPlayer::LoadCharacter()
-{
-	m_pCharacter->SetCore(m_PauseInfo.m_Core);
-	if(g_Config.m_SvPauseTime)
-		m_pCharacter->m_StartTime = Server()->Tick() - (m_PauseInfo.m_PauseTime - m_PauseInfo.m_StartTime);
-	else
-		m_pCharacter->m_StartTime = m_PauseInfo.m_StartTime;
-	m_pCharacter->m_DDRaceState = m_PauseInfo.m_DDRaceState;
-	m_pCharacter->m_RefreshTime = Server()->Tick();
-	for(int i = 0; i < NUM_WEAPONS; ++i)
-	{
-		if(m_PauseInfo.m_aHasWeapon[i])
-		{
-			if(!m_PauseInfo.m_FreezeTime)
-				m_pCharacter->GiveWeapon(i, -1);
-			else
-				m_pCharacter->GiveWeapon(i, 0);
-		}
-	}
-	m_pCharacter->m_FreezeTime = m_PauseInfo.m_FreezeTime;
-	m_pCharacter->SetLastAction(Server()->Tick());
-	m_pCharacter->SetArmor(m_PauseInfo.m_Armor);
-	m_pCharacter->m_LastMove = m_PauseInfo.m_LastMove;
-	m_pCharacter->m_PrevPos = m_PauseInfo.m_PrevPos;
-	m_pCharacter->SetActiveWeapon(m_PauseInfo.m_ActiveWeapon);
-	m_pCharacter->SetLastWeapon(m_PauseInfo.m_LastWeapon);
-	m_pCharacter->m_Super = m_PauseInfo.m_Super;
-	m_pCharacter->m_DeepFreeze = m_PauseInfo.m_DeepFreeze;
-	m_pCharacter->m_EndlessHook = m_PauseInfo.m_EndlessHook;
-	m_pCharacter->m_TeleCheckpoint = m_PauseInfo.m_TeleCheckpoint;
-	m_pCharacter->m_CpActive = m_PauseInfo.m_CpActive;
-	m_pCharacter->m_Hit = m_PauseInfo.m_Hit;
-	m_pCharacter->Teams()->m_Core.SetSolo(m_ClientID, m_PauseInfo.m_Solo);
-	for(int i = 0; i < NUM_CHECKPOINTS; i++)
-		m_pCharacter->m_CpCurrent[i] = m_PauseInfo.m_CpCurrent[i];
-	((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams.m_Core.Team(GetCID(), m_PauseInfo.m_Team);
-	m_PauseInfo.m_Respawn = false;
-	m_InfoSaved = false;
-}
-
-void CPlayer::SaveCharacter()
-{
-	m_PauseInfo.m_Core = m_pCharacter->GetCore();
-	m_PauseInfo.m_StartTime = m_pCharacter->m_StartTime;
-	m_PauseInfo.m_DDRaceState = m_pCharacter->m_DDRaceState;
-	for(int i = 0; i < WEAPON_NINJA; ++i)
-		m_PauseInfo.m_aHasWeapon[i] = m_pCharacter->GetWeaponGot(i);
-	m_PauseInfo.m_FreezeTime=m_pCharacter->m_FreezeTime;
-	m_PauseInfo.m_Armor = m_pCharacter->GetArmor();
-	m_PauseInfo.m_LastMove = m_pCharacter->m_LastMove;
-	m_PauseInfo.m_PrevPos = m_pCharacter->m_PrevPos;
-	m_PauseInfo.m_ActiveWeapon = m_pCharacter->GetActiveWeapon();
-	m_PauseInfo.m_LastWeapon = m_pCharacter->GetLastWeapon();
-	m_PauseInfo.m_Super = m_pCharacter->m_Super;
-	m_PauseInfo.m_DeepFreeze = m_pCharacter->m_DeepFreeze;
-	m_PauseInfo.m_EndlessHook = m_pCharacter->m_EndlessHook;
-	m_PauseInfo.m_Team = ((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams.m_Core.Team(GetCID());
-	m_PauseInfo.m_PauseTime = Server()->Tick();
-	m_PauseInfo.m_TeleCheckpoint = m_pCharacter->m_TeleCheckpoint;
-	m_PauseInfo.m_CpActive = m_pCharacter->m_CpActive;
-	m_PauseInfo.m_Hit = m_pCharacter->m_Hit;
-	m_PauseInfo.m_Solo = m_pCharacter->Teams()->m_Core.GetSolo(m_ClientID);
-	for(int i = 0; i < NUM_CHECKPOINTS; i++)
-		m_PauseInfo.m_CpCurrent[i] = m_pCharacter->m_CpCurrent[i];
-	//m_PauseInfo.m_RefreshTime = m_pCharacter->m_RefreshTime;
 }
 
 bool CPlayer::AfkTimer(int NewTargetX, int NewTargetY)
@@ -469,9 +407,38 @@ bool CPlayer::AfkTimer(int NewTargetX, int NewTargetY)
 	return false;
 }
 
+void CPlayer::ProcessPause()
+{
+	char aBuf[128];
+	if(m_Paused >= 2)
+	{
+		if(!m_pCharacter->IsPaused())
+		{
+			m_pCharacter->Pause(true);
+			str_format(aBuf, sizeof(aBuf), (m_Paused == 2) ? "'%s' paused" : "'%s' was force-paused", Server()->ClientName(m_ClientID));
+			GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+			GameServer()->CreateDeath(m_pCharacter->m_Pos, m_ClientID, m_pCharacter->Teams()->TeamMask(m_pCharacter->Team(), -1, m_ClientID));
+			GameServer()->CreateSound(m_pCharacter->m_Pos, SOUND_PLAYER_DIE, m_pCharacter->Teams()->TeamMask(m_pCharacter->Team(), -1, m_ClientID));
+			m_NextPauseTick = Server()->Tick() + g_Config.m_SvPauseTime * Server()->TickSpeed();
+		}
+	}
+	else
+	{
+		if(m_pCharacter->IsPaused())
+		{
+			m_pCharacter->Pause(false);
+			str_format(aBuf, sizeof(aBuf), "'%s' resumed", Server()->ClientName(m_ClientID));
+			GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+			GameServer()->CreatePlayerSpawn(m_pCharacter->m_Pos, m_pCharacter->Teams()->TeamMask(m_pCharacter->Team(), -1, m_ClientID));
+			m_NextPauseTick = Server()->Tick() + g_Config.m_SvPauseTime * Server()->TickSpeed();
+		}
+	}
+}
+
 bool CPlayer::IsPlaying()
 {
 	if(m_InfoSaved || (m_pCharacter && m_pCharacter->IsAlive()))
 		return true;
 	return false;
 }
+

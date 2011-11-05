@@ -260,6 +260,7 @@ void CGameContext::ConKill(IConsole::IResult *pResult, void *pUserData)
 
 void CGameContext::ConForcePause(IConsole::IResult *pResult, void *pUserData)
 {
+/*
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	// if(!CheckClientID(pResult->m_ClientID)) return;
 	CServer* pServ = (CServer*)pSelf->Server();
@@ -293,6 +294,7 @@ void CGameContext::ConForcePause(IConsole::IResult *pResult, void *pUserData)
 	else
 		str_format(aBuf, sizeof(aBuf), "Force-pause of '%s' have been removed by '%s'", pServ->ClientName(Victim), pServ->ClientName(pResult->m_ClientID));
 	pSelf->SendChat(-1, CHAT_ALL, aBuf);
+*/
 }
 
 void CGameContext::Mute(IConsole::IResult *pResult, NETADDR *Addr, int Secs, const char *pDisplayName)
