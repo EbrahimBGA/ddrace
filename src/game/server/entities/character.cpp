@@ -610,6 +610,9 @@ void CCharacter::Tick()
 		m_pPlayer->m_ForceBalanced = false;
 	}*/
 
+	if(m_Paused)
+		return;
+
 	DDRaceTick();
 
 	m_Core.m_Input = m_Input;
@@ -1569,9 +1572,15 @@ void CCharacter::Pause(bool Pause)
 {
 	m_Paused = Pause;
 	if(Pause)
+	{
 		GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
+		GameServer()->m_World.RemoveEntity(this);
+	}
 	else
+	{
 		GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = &m_Core;
+		GameServer()->m_World.InsertEntity(this);
+	}
 }
 
 void CCharacter::DDRaceInit()
