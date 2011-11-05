@@ -175,7 +175,7 @@ void CPlayer::Snap(int SnappingClient)
 	pPlayerInfo->m_Local = 0;
 	pPlayerInfo->m_ClientID = m_ClientID;
 	pPlayerInfo->m_Score = abs(m_Score) * -1;
-	pPlayerInfo->m_Team = (!m_Paused) ? m_Team : TEAM_SPECTATORS;
+	pPlayerInfo->m_Team = (!m_Paused || m_ClientID != SnappingClient) ? m_Team : TEAM_SPECTATORS;
 
 	if(m_ClientID == SnappingClient)
 		pPlayerInfo->m_Local = 1;
