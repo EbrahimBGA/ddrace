@@ -91,8 +91,8 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 
 void CCharacter::Destroy()
 {
-	m_Alive = false;
 	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
+	m_Alive = false;
 }
 
 void CCharacter::SetWeapon(int W)
