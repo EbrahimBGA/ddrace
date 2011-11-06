@@ -43,7 +43,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_IsUsingDDRaceClient = false;
 	m_ShowOthers = false;
 
-	m_Paused = 0;
+	m_Paused = PAUSED_NONE;
 
 	m_NextPauseTick = 0;
 
@@ -104,11 +104,11 @@ void CPlayer::Tick()
 	{
 		if(m_pCharacter->IsAlive())
 		{
-			if(m_Paused >= 3)
+			if(m_Paused >= PAUSED_FORCE)
 			{
 				ProcessPause();
 			}
-			else if(m_Paused == 2 && m_NextPauseTick < Server()->Tick())
+			else if(m_Paused == PAUSED_PAUSED && m_NextPauseTick < Server()->Tick())
 			{
 				if((!m_pCharacter->GetWeaponGot(WEAPON_NINJA) || m_pCharacter->m_FreezeTime) && m_pCharacter->IsGrounded() && m_pCharacter->m_Pos == m_pCharacter->m_PrevPos)
 					ProcessPause();
@@ -176,7 +176,7 @@ void CPlayer::Snap(int SnappingClient)
 	pPlayerInfo->m_Local = 0;
 	pPlayerInfo->m_ClientID = m_ClientID;
 	pPlayerInfo->m_Score = abs(m_Score) * -1;
-	pPlayerInfo->m_Team = (m_Paused != 1 || m_ClientID != SnappingClient) && m_Paused < 2 ? m_Team : TEAM_SPECTATORS;
+	pPlayerInfo->m_Team = (m_Paused != PAUSED_SPEC || m_ClientID != SnappingClient) && m_Paused < PAUSED_PAUSED ? m_Team : TEAM_SPECTATORS;
 
 	if(m_ClientID == SnappingClient)
 		pPlayerInfo->m_Local = 1;
@@ -414,12 +414,12 @@ bool CPlayer::AfkTimer(int NewTargetX, int NewTargetY)
 void CPlayer::ProcessPause()
 {
 	char aBuf[128];
-	if(m_Paused >= 2)
+	if(m_Paused >= PAUSED_PAUSED)
 	{
 		if(!m_pCharacter->IsPaused())
 		{
 			m_pCharacter->Pause(true);
-			str_format(aBuf, sizeof(aBuf), (m_Paused == 2) ? "'%s' paused" : "'%s' was force-paused", Server()->ClientName(m_ClientID));
+			str_format(aBuf, sizeof(aBuf), (m_Paused == PAUSED_PAUSED) ? "'%s' paused" : "'%s' was force-paused", Server()->ClientName(m_ClientID));
 			GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 			GameServer()->CreateDeath(m_pCharacter->m_Pos, m_ClientID, m_pCharacter->Teams()->TeamMask(m_pCharacter->Team(), -1, m_ClientID));
 			GameServer()->CreateSound(m_pCharacter->m_Pos, SOUND_PLAYER_DIE, m_pCharacter->Teams()->TeamMask(m_pCharacter->Team(), -1, m_ClientID));

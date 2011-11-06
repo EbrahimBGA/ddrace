@@ -210,7 +210,7 @@ void CGameContext::ConTogglePause(IConsole::IResult *pResult, void *pUserData)
 	if(!pPlayer)
 		return;
 
-	pPlayer->m_Paused = (pPlayer->m_Paused == 2) ? 0 : 2;
+	pPlayer->m_Paused = (pPlayer->m_Paused == CPlayer::PAUSED_PAUSED) ? CPlayer::PAUSED_NONE : CPlayer::PAUSED_PAUSED;
 }
 
 void CGameContext::ConToggleSpec(IConsole::IResult *pResult, void *pUserData)
@@ -222,7 +222,7 @@ void CGameContext::ConToggleSpec(IConsole::IResult *pResult, void *pUserData)
 	if(!pPlayer)
 		return;
 
-	pPlayer->m_Paused = (pPlayer->m_Paused == 1) ? 0 : 1;
+	pPlayer->m_Paused = (pPlayer->m_Paused == CPlayer::PAUSED_SPEC) ? CPlayer::PAUSED_NONE : CPlayer::PAUSED_SPEC;
 }
 
 void CGameContext::ConTop5(IConsole::IResult *pResult, void *pUserData)

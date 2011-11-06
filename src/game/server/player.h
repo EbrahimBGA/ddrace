@@ -112,6 +112,14 @@ private:
 	// DDRace
 
 public:
+	enum
+	{
+		PAUSED_NONE=0,
+		PAUSED_SPEC,
+		PAUSED_PAUSED,
+		PAUSED_FORCE
+	};
+
 	int m_Paused;
 	int64 m_NextPauseTick;
 
