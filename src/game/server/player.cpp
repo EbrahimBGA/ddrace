@@ -251,10 +251,12 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 	m_PlayerFlags = NewInput->m_PlayerFlags;
 
 	if(m_pCharacter)
+	{
 		if(!m_Paused)
 			m_pCharacter->OnDirectInput(NewInput);
 		else
 			m_pCharacter->ResetInput();
+	}
 
 	if(!m_pCharacter && m_Team != TEAM_SPECTATORS && (NewInput->m_Fire&1))
 		m_Spawning = true;
@@ -423,7 +425,7 @@ void CPlayer::ProcessPause()
 			GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 			GameServer()->CreateDeath(m_pCharacter->m_Pos, m_ClientID, m_pCharacter->Teams()->TeamMask(m_pCharacter->Team(), -1, m_ClientID));
 			GameServer()->CreateSound(m_pCharacter->m_Pos, SOUND_PLAYER_DIE, m_pCharacter->Teams()->TeamMask(m_pCharacter->Team(), -1, m_ClientID));
-			m_NextPauseTick = Server()->Tick() + g_Config.m_SvPauseTime * Server()->TickSpeed();
+			m_NextPauseTick = Server()->Tick() + g_Config.m_SvPauseFrequency * Server()->TickSpeed();
 		}
 	}
 	else
@@ -434,7 +436,7 @@ void CPlayer::ProcessPause()
 			str_format(aBuf, sizeof(aBuf), "'%s' resumed", Server()->ClientName(m_ClientID));
 			GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 			GameServer()->CreatePlayerSpawn(m_pCharacter->m_Pos, m_pCharacter->Teams()->TeamMask(m_pCharacter->Team(), -1, m_ClientID));
-			m_NextPauseTick = Server()->Tick() + g_Config.m_SvPauseTime * Server()->TickSpeed();
+			m_NextPauseTick = Server()->Tick() + g_Config.m_SvPauseFrequency * Server()->TickSpeed();
 		}
 	}
 }
