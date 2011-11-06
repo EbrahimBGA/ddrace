@@ -118,7 +118,8 @@ void CPlayer::Tick()
 				ProcessPause();
 			}
 
-			m_ViewPos = m_pCharacter->m_Pos;
+			if(!m_Paused)
+				m_ViewPos = m_pCharacter->m_Pos;
 		}
 		else if(!m_pCharacter->IsPaused())
 		{
@@ -143,7 +144,7 @@ void CPlayer::PostTick()
 	}
 
 	// update view pos for spectators
-	if(m_Team == TEAM_SPECTATORS && m_SpectatorID != SPEC_FREEVIEW && GameServer()->m_apPlayers[m_SpectatorID])
+	if((m_Team == TEAM_SPECTATORS || m_Paused) && m_SpectatorID != SPEC_FREEVIEW && GameServer()->m_apPlayers[m_SpectatorID])
 		m_ViewPos = GameServer()->m_apPlayers[m_SpectatorID]->m_ViewPos;
 }
 
@@ -175,7 +176,7 @@ void CPlayer::Snap(int SnappingClient)
 	pPlayerInfo->m_Local = 0;
 	pPlayerInfo->m_ClientID = m_ClientID;
 	pPlayerInfo->m_Score = abs(m_Score) * -1;
-	pPlayerInfo->m_Team = (!m_Paused || m_ClientID != SnappingClient) ? m_Team : TEAM_SPECTATORS;
+	pPlayerInfo->m_Team = (m_Paused != 1 || m_ClientID != SnappingClient) && m_Paused < 2 ? m_Team : TEAM_SPECTATORS;
 
 	if(m_ClientID == SnappingClient)
 		pPlayerInfo->m_Local = 1;
@@ -257,6 +258,9 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 
 	if(!m_pCharacter && m_Team != TEAM_SPECTATORS && (NewInput->m_Fire&1))
 		m_Spawning = true;
+
+	if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_SpectatorID == SPEC_FREEVIEW)
+		m_ViewPos = vec2(NewInput->m_TargetX, NewInput->m_TargetY);
 
 	// check for activity
 	if(NewInput->m_Direction || m_LatestActivity.m_TargetX != NewInput->m_TargetX ||
