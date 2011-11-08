@@ -199,6 +199,7 @@ void CGameContext::ConTogglePause(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	if(!CheckClientID(pResult->m_ClientID)) return;
+	char aBuf[128];
 
 	if(!g_Config.m_SvPauseable)
 	{
@@ -210,6 +211,13 @@ void CGameContext::ConTogglePause(IConsole::IResult *pResult, void *pUserData)
 	if(!pPlayer)
 		return;
 
+	if(pPlayer->m_Paused == CPlayer::PAUSED_FORCE)
+	{
+		str_format(aBuf, sizeof(aBuf), "You are force-paused. %ds left.", pPlayer->m_ForcePauseTime/pSelf->Server()->TickSpeed());
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "pause", aBuf);
+		return;
+	}
+
 	pPlayer->m_Paused = (pPlayer->m_Paused == CPlayer::PAUSED_PAUSED) ? CPlayer::PAUSED_NONE : CPlayer::PAUSED_PAUSED;
 }
 
@@ -217,10 +225,18 @@ void CGameContext::ConToggleSpec(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	if(!CheckClientID(pResult->m_ClientID)) return;
+	char aBuf[128];
 
 	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
 	if(!pPlayer)
 		return;
+
+	if(pPlayer->m_Paused == CPlayer::PAUSED_FORCE)
+	{
+		str_format(aBuf, sizeof(aBuf), "You are force-paused. %ds left.", pPlayer->m_ForcePauseTime/pSelf->Server()->TickSpeed());
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "spec", aBuf);
+		return;
+	}
 
 	pPlayer->m_Paused = (pPlayer->m_Paused == CPlayer::PAUSED_SPEC) ? CPlayer::PAUSED_NONE : CPlayer::PAUSED_SPEC;
 }

@@ -106,6 +106,8 @@ void CPlayer::Tick()
 		{
 			if(m_Paused >= PAUSED_FORCE)
 			{
+				if(m_ForcePauseTime == 0)
+					m_Paused = PAUSED_NONE;
 				ProcessPause();
 			}
 			else if(m_Paused == PAUSED_PAUSED && m_NextPauseTick < Server()->Tick())
@@ -306,15 +308,7 @@ void CPlayer::SetTeam(int Team)
 		return;
 
 	char aBuf[512];
-	if(m_InfoSaved)
-	{
-		if(Team == TEAM_SPECTATORS)
-			str_format(aBuf, sizeof(aBuf), "'%s' paused", Server()->ClientName(m_ClientID));
-		else
-			str_format(aBuf, sizeof(aBuf), "'%s' resumed", Server()->ClientName(m_ClientID));
-	}
-	else
-		str_format(aBuf, sizeof(aBuf), "'%s' joined the %s", Server()->ClientName(m_ClientID), GameServer()->m_pController->GetTeamName(Team));
+	str_format(aBuf, sizeof(aBuf), "'%s' joined the %s", Server()->ClientName(m_ClientID), GameServer()->m_pController->GetTeamName(Team));
 	GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 
 	KillCharacter();
@@ -421,7 +415,7 @@ void CPlayer::ProcessPause()
 		if(!m_pCharacter->IsPaused())
 		{
 			m_pCharacter->Pause(true);
-			str_format(aBuf, sizeof(aBuf), (m_Paused == PAUSED_PAUSED) ? "'%s' paused" : "'%s' was force-paused", Server()->ClientName(m_ClientID));
+			str_format(aBuf, sizeof(aBuf), (m_Paused == PAUSED_PAUSED) ? "'%s' paused" : "'%s' was force-paused for %ds", Server()->ClientName(m_ClientID), m_ForcePauseTime/Server()->TickSpeed());
 			GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 			GameServer()->CreateDeath(m_pCharacter->m_Pos, m_ClientID, m_pCharacter->Teams()->TeamMask(m_pCharacter->Team(), -1, m_ClientID));
 			GameServer()->CreateSound(m_pCharacter->m_Pos, SOUND_PLAYER_DIE, m_pCharacter->Teams()->TeamMask(m_pCharacter->Team(), -1, m_ClientID));
