@@ -40,14 +40,20 @@ void CGameContext::ConCredits(IConsole::IResult *pResult, void *pUserData)
 void CGameContext::ConInfo(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *) pUserData;
+//Rallye+
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "info",
-			"DDRace Mod. Version: " GAME_VERSION);
+			"Rallye   site: http://rallye.teeworlds.cz/");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "info",
+			"Based on DDRace Mod. Version: " GAME_VERSION);
+/*
 #if defined( GIT_SHORTREV_HASH )
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "info",
 			"Git revision hash: " GIT_SHORTREV_HASH);
 #endif
+*/
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "info",
-			"Official site: DDRace.info");
+			"Official DDRace site: DDRace.info");
+//Rallye-
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "info",
 			"For more Info /cmdlist");
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "info",
